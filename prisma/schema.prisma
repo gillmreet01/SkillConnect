@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CLIENT
+  FREELANCER
+}
+
+// open -> in progress (proposal accepted) -> submitted (work delivered) -> completed
+enum ProjectStatus {
+  OPEN
+  IN_PROGRESS
+  SUBMITTED
+  COMPLETED
+  CANCELLED
+}
+
+enum ProposalStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  freelancerProfile FreelancerProfile?
+  postedProjects    Project[]          @relation("ClientProjects")
+  assignedProjects  Project[]          @relation("FreelancerProjects")
+  proposals         Proposal[]
+  reviewsWritten    Review[]           @relation("ReviewAuthor")
+  reviewsReceived   Review[]           @relation("ReviewSubject")
+}
+
+model FreelancerProfile {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  headline        String
+  bio             String
+  hourlyRateCents Int?
+  portfolioUrl    String?
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skills Skill[]
+}
+
+model Skill {
+  id   String @id @default(cuid())
+  name String @unique
+
+  projects    Project[]
+  freelancers FreelancerProfile[]
+}
+
+model Project {
+  id           String        @id @default(cuid())
+  title        String
+  description  String
+  budgetCents  Int
+  deadline     DateTime?
+  status       ProjectStatus @default(OPEN)
+  clientId     String
+  freelancerId String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  client     User       @relation("ClientProjects", fields: [clientId], references: [id], onDelete: Cascade)
+  freelancer User?      @relation("FreelancerProjects", fields: [freelancerId], references: [id], onDelete: SetNull)
+  skills     Skill[]
+  proposals  Proposal[]
+  reviews    Review[]
+
+  @@index([status, createdAt])
+  @@index([clientId])
+  @@index([freelancerId])
+}
+
+model Proposal {
+  id            String         @id @default(cuid())
+  projectId     String
+  freelancerId  String
+  coverLetter   String
+  bidCents      Int
+  estimatedDays Int
+  status        ProposalStatus @default(PENDING)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  freelancer User    @relation(fields: [freelancerId], references: [id], onDelete: Cascade)
+
+  // one proposal per freelancer per project
+  @@unique([projectId, freelancerId])
+  @@index([freelancerId])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  projectId String
+  authorId  String
+  subjectId String
+  rating    Int // 1-5, enforced in app code
+  comment   String
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author  User    @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  subject User    @relation("ReviewSubject", fields: [subjectId], references: [id], onDelete: Cascade)
+
+  // each party reviews the other once per project
+  @@unique([projectId, authorId])
+  @@index([subjectId])
+}
