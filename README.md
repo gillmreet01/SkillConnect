@@ -13,17 +13,37 @@ sides review each other when the work is done.
 - **Next.js** (App Router, React Server Components) + **TypeScript**
 - **PostgreSQL** with **Prisma** ORM and migrations
 - **Tailwind CSS**
-- **GitHub Actions** CI: lint, typecheck, migrate, seed and build against a real Postgres
+- Custom auth: bcrypt password hashing, signed JWT session cookies (`jose`), Zod validation
+- **Vitest** unit tests
+- **GitHub Actions** CI: lint, typecheck, unit tests, migrate, seed and build against a real Postgres
 
 ## Features
 
 - [x] Relational data model: users (client / freelancer roles), freelancer profiles, skills, projects, proposals, reviews
 - [x] Open-projects feed rendered on the server from Postgres
-- [ ] Sign-up / login with role-based access
+- [x] Sign-up / login with client and freelancer roles, role-specific dashboards
 - [ ] Clients post and manage projects
 - [ ] Freelancers browse, filter by skill and budget, and submit proposals
 - [ ] Accept a proposal → project moves through `OPEN → IN_PROGRESS → SUBMITTED → COMPLETED`
 - [ ] Two-way reviews and ratings after completion
+
+## Authentication
+
+Built on Next.js's recommended pattern instead of an auth library, so every
+piece is visible in the code:
+
+- **Sign-up / login** are Server Actions validated with Zod (`src/app/actions/auth.ts`).
+  Passwords are hashed with bcrypt. Login returns the same error for an unknown
+  email and a wrong password, and compares against a dummy hash so both take
+  the same time.
+- **Sessions** are HS256-signed JWTs in an `httpOnly`, `SameSite=Lax` cookie
+  that lasts 7 days (`src/lib/session.ts`).
+- **Authorization** happens in two layers:
+  - `src/proxy.ts` does a fast cookie-only check that redirects signed-out users
+    away from dashboards.
+  - The data access layer (`src/lib/dal.ts`) re-checks the user against the
+    database on every page and action (`requireUser`, `requireRole`), so a
+    deleted account or the wrong role can't get through.
 
 ## Data model
 
@@ -46,7 +66,7 @@ one such as Neon or Supabase).
 git clone https://github.com/gillmreet01/SkillConnect.git
 cd SkillConnect
 npm install                 # also generates the Prisma client
-cp .env.example .env        # then set DATABASE_URL
+cp .env.example .env        # then set DATABASE_URL and SESSION_SECRET
 npm run db:migrate          # create the tables
 npm run db:seed             # load demo data
 npm run dev                 # http://localhost:3000
@@ -77,6 +97,7 @@ All seeded accounts use the password `password123`.
 | `npm run build`     | Production build                      |
 | `npm run lint`      | ESLint                                |
 | `npm run typecheck` | Generate route types and run `tsc`    |
+| `npm test`          | Unit tests (Vitest)                   |
 | `npm run db:migrate`| Create/apply migrations in development|
 | `npm run db:seed`   | Reset and load demo data              |
 | `npm run db:reset`  | Drop the database, re-migrate, re-seed|

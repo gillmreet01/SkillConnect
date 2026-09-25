@@ -18,12 +18,12 @@ export default async function Home() {
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-12 sm:px-6">
-      <header className="mb-10">
-        <h1 className="text-3xl font-semibold tracking-tight">SkillConnect</h1>
+      <section className="mb-10">
+        <h1 className="text-3xl font-semibold tracking-tight">Find work. Hire talent.</h1>
         <p className="mt-2 text-zinc-600 dark:text-zinc-400">
           Clients post projects. Freelancers send proposals. The work gets done.
         </p>
-      </header>
+      </section>
 
       <h2 className="mb-4 text-lg font-medium">Open projects ({projects.length})</h2>
 
