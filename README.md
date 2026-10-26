@@ -22,8 +22,9 @@ sides review each other when the work is done.
 - [x] Relational data model: users (client / freelancer roles), freelancer profiles, skills, projects, proposals, reviews
 - [x] Open-projects feed rendered on the server from Postgres
 - [x] Sign-up / login with client and freelancer roles, role-specific dashboards
-- [ ] Clients post and manage projects
-- [ ] Freelancers browse, filter by skill and budget, and submit proposals
+- [x] Clients post projects (title, description, budget, deadline, skills)
+- [x] Anyone can browse open projects, filter by skill and budget, and open a project page
+- [ ] Freelancers submit proposals; clients accept or reject them
 - [ ] Accept a proposal → project moves through `OPEN → IN_PROGRESS → SUBMITTED → COMPLETED`
 - [ ] Two-way reviews and ratings after completion
 

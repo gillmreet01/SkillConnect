@@ -96,6 +96,27 @@ async function main() {
     },
   });
 
+  await db.project.create({
+    data: {
+      title: "Python script to clean and dedupe a customer CSV",
+      description: "One-off script that normalizes names and emails and removes duplicates from a 50k-row export.",
+      budgetCents: 25000,
+      clientId: client.id,
+      skills: { connect: connect("Python", "PostgreSQL") },
+    },
+  });
+
+  await db.project.create({
+    data: {
+      title: "Marketplace MVP: Next.js, Postgres and Stripe",
+      description: "Two-sided marketplace with auth, listings, search and checkout. Design files provided.",
+      budgetCents: 480000,
+      deadline: new Date("2027-01-31T00:00:00Z"),
+      clientId: client.id,
+      skills: { connect: connect("React", "Next.js", "TypeScript", "PostgreSQL") },
+    },
+  });
+
   const dashboard = await db.project.create({
     data: {
       title: "Internal sales dashboard",
