@@ -44,5 +44,5 @@ export const projectCardSelect = {
   budgetCents: true,
   skills: { select: { id: true, name: true }, orderBy: { name: "asc" } },
   client: { select: { name: true } },
-  _count: { select: { proposals: true } },
+  _count: { select: { proposals: { where: { status: { not: "WITHDRAWN" } } } } },
 } as const;

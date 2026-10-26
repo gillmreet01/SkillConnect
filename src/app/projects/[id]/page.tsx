@@ -6,6 +6,7 @@ import { connection } from "next/server";
 import { getCurrentUser } from "@/lib/dal";
 import { db } from "@/lib/db";
 import { formatCents } from "@/lib/format";
+import { ClientSection, FreelancerSection, SignedOutSection } from "./proposal-sections";
 
 const statusLabels = {
   OPEN: "Open",
@@ -31,10 +32,20 @@ const getProject = cache((id: string) =>
       clientId: true,
       client: { select: { name: true } },
       skills: { select: { id: true, name: true }, orderBy: { name: "asc" } },
-      _count: { select: { proposals: true } },
+      freelancer: { select: { name: true } },
+      // Withdrawn proposals don't count as interest in the project.
+      _count: { select: { proposals: { where: { status: { not: "WITHDRAWN" } } } } },
     },
   }),
 );
+
+const proposalSelect = {
+  id: true,
+  coverLetter: true,
+  bidCents: true,
+  estimatedDays: true,
+  status: true,
+} as const;
 
 export async function generateMetadata({ params }: PageProps<"/projects/[id]">): Promise<Metadata> {
   await connection();
@@ -48,6 +59,26 @@ export default async function ProjectPage({ params }: PageProps<"/projects/[id]"
   if (!project) notFound();
 
   const isOwner = user?.id === project.clientId;
+
+  // Only load what this viewer is allowed to see.
+  const [received, own] = await Promise.all([
+    isOwner
+      ? db.proposal.findMany({
+          where: { projectId: project.id },
+          orderBy: { createdAt: "asc" },
+          select: {
+            ...proposalSelect,
+            freelancer: { select: { name: true, freelancerProfile: { select: { headline: true } } } },
+          },
+        })
+      : null,
+    user?.role === "FREELANCER"
+      ? db.proposal.findUnique({
+          where: { projectId_freelancerId: { projectId: project.id, freelancerId: user.id } },
+          select: proposalSelect,
+        })
+      : null,
+  ]);
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-12 sm:px-6">
@@ -64,6 +95,7 @@ export default async function ProjectPage({ params }: PageProps<"/projects/[id]"
         {statusLabels[project.status]} · posted by {project.client.name} on {dateFormat.format(project.createdAt)}
         {project.deadline && ` · due ${dateFormat.format(project.deadline)}`} · {project._count.proposals}{" "}
         {project._count.proposals === 1 ? "proposal" : "proposals"}
+        {project.freelancer && ` · hired ${project.freelancer.name}`}
         {isOwner && " · your project"}
       </p>
 
@@ -81,6 +113,10 @@ export default async function ProjectPage({ params }: PageProps<"/projects/[id]"
 
       <h2 className="mt-8 mb-2 text-lg font-medium">Description</h2>
       <p className="whitespace-pre-wrap text-zinc-700 dark:text-zinc-300">{project.description}</p>
+
+      {received && <ClientSection projectOpen={project.status === "OPEN"} proposals={received} />}
+      {user?.role === "FREELANCER" && <FreelancerSection project={project} proposal={own} />}
+      {!user && <SignedOutSection />}
     </main>
   );
 }

@@ -29,6 +29,22 @@ export const LoginSchema = z.object({
 
 const isoDate = /^\d{4}-\d{2}-\d{2}$/;
 
+// Entered in whole dollars, stored as cents.
+function dollarsField(min: number, max: number, label: string) {
+  return z
+    .string()
+    .trim()
+    .regex(/^\d+$/, { error: "Enter a whole-dollar amount." })
+    .transform(Number)
+    .pipe(
+      z
+        .number()
+        .min(min, { error: `${label} must be at least $${min}.` })
+        .max(max, { error: `${label} must be at most $${max.toLocaleString("en-US")}.` }),
+    )
+    .transform((dollars) => dollars * 100);
+}
+
 export const NewProjectSchema = z.object({
   title: z
     .string()
@@ -40,19 +56,7 @@ export const NewProjectSchema = z.object({
     .trim()
     .min(20, { error: "Describe the project in at least 20 characters." })
     .max(5000, { error: "Description must be at most 5,000 characters." }),
-  // Entered in whole dollars, stored as cents.
-  budget: z
-    .string()
-    .trim()
-    .regex(/^\d+$/, { error: "Enter a whole-dollar amount." })
-    .transform(Number)
-    .pipe(
-      z
-        .number()
-        .min(5, { error: "Budget must be at least $5." })
-        .max(1_000_000, { error: "Budget must be at most $1,000,000." }),
-    )
-    .transform((dollars) => dollars * 100),
+  budget: dollarsField(5, 1_000_000, "Budget"),
   // Optional. An empty date input arrives as "".
   deadline: z
     .string()
@@ -79,6 +83,30 @@ function startOfTodayUtc() {
   const now = new Date();
   return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
 }
+
+export const ProposalSchema = z.object({
+  projectId: z.string().min(1),
+  coverLetter: z
+    .string()
+    .trim()
+    .min(20, { error: "Write at least 20 characters about why you're a good fit." })
+    .max(3000, { error: "Keep it under 3,000 characters." }),
+  bid: dollarsField(1, 1_000_000, "Bid"),
+  days: z
+    .string()
+    .trim()
+    .regex(/^\d+$/, { error: "Enter a whole number of days." })
+    .transform(Number)
+    .pipe(z.number().min(1, { error: "Allow at least 1 day." }).max(365, { error: "Keep it to 365 days or fewer." })),
+});
+
+export type ProposalFormState =
+  | {
+      errors?: Partial<Record<"coverLetter" | "bid" | "days", string[]>>;
+      message?: string;
+      values?: { coverLetter?: string; bid?: string; days?: string };
+    }
+  | undefined;
 
 export type ProjectFormState =
   | {

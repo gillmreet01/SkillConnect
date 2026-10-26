@@ -24,8 +24,8 @@ sides review each other when the work is done.
 - [x] Sign-up / login with client and freelancer roles, role-specific dashboards
 - [x] Clients post projects (title, description, budget, deadline, skills)
 - [x] Anyone can browse open projects, filter by skill and budget, and open a project page
-- [ ] Freelancers submit proposals; clients accept or reject them
-- [ ] Accept a proposal → project moves through `OPEN → IN_PROGRESS → SUBMITTED → COMPLETED`
+- [x] Freelancers send a proposal (cover letter, bid, estimated days) and can withdraw it; clients accept or reject — accepting hires that freelancer, moves the project to `IN_PROGRESS` and closes the other pending proposals
+- [ ] Delivery: freelancer submits work, client marks it complete (`IN_PROGRESS → SUBMITTED → COMPLETED`)
 - [ ] Two-way reviews and ratings after completion
 
 ## Authentication
