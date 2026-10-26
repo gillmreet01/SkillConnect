@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LoginSchema, NewProjectSchema, SignupSchema } from "@/lib/definitions";
+import { LoginSchema, NewProjectSchema, ProposalSchema, SignupSchema } from "@/lib/definitions";
 
 const validSignup = {
   name: "Aisha Khan",
@@ -82,5 +82,42 @@ describe("NewProjectSchema", () => {
   it("rejects too-short titles and descriptions", () => {
     expect(NewProjectSchema.safeParse({ ...valid, title: "Hi" }).success).toBe(false);
     expect(NewProjectSchema.safeParse({ ...valid, description: "too short" }).success).toBe(false);
+  });
+});
+
+describe("ProposalSchema", () => {
+  const valid = {
+    projectId: "p1",
+    coverLetter: "  I have built three similar sites and can start right away.  ",
+    bid: "550",
+    days: "7",
+  };
+
+  it("trims the letter and converts the bid to cents", () => {
+    const result = ProposalSchema.safeParse(valid);
+    expect(result.success).toBe(true);
+    expect(result.data).toMatchObject({
+      coverLetter: "I have built three similar sites and can start right away.",
+      bid: 55000,
+      days: 7,
+    });
+  });
+
+  it("rejects bad bids", () => {
+    for (const bid of ["", "0", "abc", "12.5", "-3", "1000001"]) {
+      expect(ProposalSchema.safeParse({ ...valid, bid }).success, bid).toBe(false);
+    }
+  });
+
+  it("requires 1 to 365 whole days", () => {
+    for (const days of ["", "0", "366", "2.5", "soon"]) {
+      expect(ProposalSchema.safeParse({ ...valid, days }).success, days).toBe(false);
+    }
+    expect(ProposalSchema.safeParse({ ...valid, days: "365" }).success).toBe(true);
+  });
+
+  it("rejects a missing project id and a too-short letter", () => {
+    expect(ProposalSchema.safeParse({ ...valid, projectId: "" }).success).toBe(false);
+    expect(ProposalSchema.safeParse({ ...valid, coverLetter: "Hire me" }).success).toBe(false);
   });
 });

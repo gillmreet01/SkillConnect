@@ -25,7 +25,7 @@ export default async function ClientDashboardPage() {
       title: true,
       budgetCents: true,
       status: true,
-      _count: { select: { proposals: true } },
+      _count: { select: { proposals: { where: { status: { not: "WITHDRAWN" } } } } },
     },
   });
 
